@@ -1,32 +1,22 @@
 package com.dikshaJoshi.StockProblem.service;
 
-import com.dikshaJoshi.StockProblem.dto.BuyQueue;
-import com.dikshaJoshi.StockProblem.dto.DLinkedListSellStocks;
-import com.dikshaJoshi.StockProblem.dto.StockMarketDataQueues;
+import com.dikshaJoshi.StockProblem.dto.OrderDetails;
+import com.dikshaJoshi.StockProblem.dto.StockData;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
 
 @Getter
 @Setter
 public class StockMarketMainClass {
 
-    @Autowired
-    StockMarget stockMarget;
-
     private static StockMarketMainClass instance;
-    private final Map<String, StockMarketDataQueues> dataMap;
-
-    private DLinkedListSellStocks head = null;
-    private DLinkedListSellStocks tail = null;
+    private final Map<String, StockData> stockMap;
 
     private StockMarketMainClass(){
-        this.dataMap = new HashMap<String, StockMarketDataQueues>();
+        this.stockMap = new HashMap<String, StockData>();
     }
 
     public static StockMarketMainClass getInstance(){
@@ -38,84 +28,35 @@ public class StockMarketMainClass {
         return instance;
     }
 
-    public Boolean buyStock(String stockName, Integer stockPrice, String stockItemIndex, Integer stockItemCount){
+    public Boolean buyStock(String index, String stockName, Double stockPrice, Integer stockItemCount){
 
-        if(dataMap.containsKey(stockName)){
+        OrderDetails orderdetails = OrderDetails.createOrder(index, "buy", stockName, System.nanoTime(),
+                stockPrice, stockItemCount);
 
-            dataMap.get(stockName)
-                    .getBuyQueue()
-                    .add(new BuyQueue(stockItemIndex, stockPrice, stockItemCount));
-
-        }else{
-
-            StockMarketDataQueues buySellQueue = new StockMarketDataQueues();
-
-            Queue<BuyQueue> buyQueue = new LinkedList<>();
-            buyQueue.add(new BuyQueue(stockItemIndex, stockPrice, stockItemCount));
-
-            DLinkedListSellStocks sellNode = null;
-
-            buySellQueue.setBuyQueue(buyQueue);
-            buySellQueue.setSellNode(sellNode);
-
-            dataMap.put(stockName, buySellQueue);
-
+        if (stockMap.containsKey(stockName)) {
+            stockMap.get(stockName)
+                    .buyStock(orderdetails);
+        } else {
+            StockData stockData = new StockData();
+            stockData.buyStock(orderdetails);
+            stockMap.put(stockName, stockData);
         }
-
-//        return stockMarget.buyStock(stockName, stockValue, stockItemIndex, stockItemCount);
         return true;
     }
 
-    public Boolean sellStock(String stockName, Integer stockItemPrice, String stockItemIndex, Integer stockItemCount){
+    public Boolean sellStock(String index, String stockName, Double stockPrice, Integer stockItemCount){
 
-        if(dataMap.containsKey(stockName)){
+        OrderDetails orderdetails = OrderDetails.createOrder(index, "sell", stockName, System.nanoTime(),
+                stockPrice, stockItemCount);
 
-            DLinkedListSellStocks sellNode = new DLinkedListSellStocks(stockItemPrice, stockItemIndex, stockItemCount);
-            addToMinSortedSellList(sellNode);
-            runBuyForAllStocks(dataMap.get(stockName));
-
-        }else{
-
-            StockMarketDataQueues buySellQueue = new StockMarketDataQueues();
-            Queue<BuyQueue> buyQueue = new LinkedList<>();
-
-            DLinkedListSellStocks sellNodeList = new DLinkedListSellStocks(stockItemPrice, stockItemIndex, stockItemCount);
-            addToMinSortedSellList(sellNodeList);
-
-            buySellQueue.setBuyQueue(buyQueue);
-            buySellQueue.setSellNode(sellNodeList);
-
-            dataMap.put(stockName, buySellQueue);
-
+        if(stockMap.containsKey(stockName)){
+            stockMap.get(stockName)
+                    .sellStock(orderdetails);
+        } else {
+            StockData stockData = new StockData();
+            stockData.sellStock(orderdetails);
+            stockMap.put(stockName, stockData);
         }
-
-
-
-//        return stockMarget.sellStock(stockName, stockValue, stockItemIndex, stockItemCount);
-
         return true;
-    }
-
-    //Min first
-    void addToMinSortedSellList(DLinkedListSellStocks sellNode){
-
-        sellNode.setNext(null);
-        sellNode.setPrev(head);
-
-        if(head != null){
-            if(sellNode.getSellItemPrice() < head.getSellItemPrice()){
-                head.setPrev(sellNode);
-            }
-        }
-
-        head = sellNode;
-        head.setNext(null);
-
-    }
-
-    void runBuyForAllStocks(StockMarketDataQueues stockBuySellQueue){
-
-        Queue<BuyQueue> buyQueue = stockBuySellQueue.getBuyQueue();
-        DLinkedListSellStocks sellNodeList = stockBuySellQueue.getSellNode();
     }
 }
